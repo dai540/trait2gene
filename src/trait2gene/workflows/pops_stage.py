@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 
 from trait2gene.config.defaults import DEFAULT_FEATURE_PREFIX_BASENAME, MAGMA_GENE_OUTPUT_SUFFIXES
@@ -10,6 +11,8 @@ from trait2gene.engine.shell import resolve_executable_command, run_command
 from trait2gene.io.features import count_feature_chunks, is_pre_munged_prefix
 from trait2gene.io.outputs import ensure_output_layout
 from trait2gene.resources.resolver import resolve_resources
+
+MAX_POPS_ATTEMPTS = 2
 
 
 def _append_bool_flag(args: list[str], *, enabled: bool, true_flag: str, false_flag: str) -> None:
@@ -54,6 +57,37 @@ def _resolve_magma_prefix(config, layout) -> Path | None:
         if all(Path(f"{source_prefix}{suffix}").exists() for suffix in MAGMA_GENE_OUTPUT_SUFFIXES):
             return source_prefix
     return None
+
+
+def _write_pops_attempt_logs(layout: dict[str, Path], attempt: int, stdout: str | None, stderr: str | None) -> None:
+    stdout_text = stdout or ""
+    stderr_text = stderr or ""
+    (layout["metadata"] / f"pops.attempt-{attempt}.stdout.log").write_text(stdout_text, encoding="utf-8")
+    (layout["metadata"] / f"pops.attempt-{attempt}.stderr.log").write_text(stderr_text, encoding="utf-8")
+    (layout["metadata"] / "pops.stdout.log").write_text(stdout_text, encoding="utf-8")
+    (layout["metadata"] / "pops.stderr.log").write_text(stderr_text, encoding="utf-8")
+
+
+def _run_pops_command(command: list[str], layout: dict[str, Path]) -> subprocess.CompletedProcess[str]:
+    last_error: subprocess.CalledProcessError | None = None
+    for attempt in range(1, MAX_POPS_ATTEMPTS + 1):
+        try:
+            result = run_command(command)
+        except subprocess.CalledProcessError as exc:
+            _write_pops_attempt_logs(layout, attempt, exc.stdout, exc.stderr)
+            last_error = exc
+            if attempt == MAX_POPS_ATTEMPTS:
+                stderr = (exc.stderr or "").strip()
+                stdout = (exc.stdout or "").strip()
+                detail = stderr or stdout or "No stdout/stderr captured."
+                raise RuntimeError(f"PoPS command failed after {attempt} attempts. {detail}") from exc
+            console.print(
+                "[yellow]PoPS command failed on first attempt; retrying once with the same inputs.[/yellow]"
+            )
+            continue
+        _write_pops_attempt_logs(layout, attempt, result.stdout, result.stderr)
+        return result
+    raise RuntimeError("PoPS command failed before any attempt completed.") from last_error
 
 
 def run_pops(config_path: Path) -> dict[str, str | int]:
@@ -163,11 +197,10 @@ def run_pops(config_path: Path) -> dict[str, str | int]:
         "magma_prefix": str(magma_prefix) if magma_prefix is not None else None,
         "vendor_script": str(vendor_script),
         "command": command,
+        "max_attempts": MAX_POPS_ATTEMPTS,
     }
     write_json(layout["metadata"] / "pops_plan.json", payload)
-    result = run_command(command)
-    (layout["metadata"] / "pops.stdout.log").write_text(result.stdout or "", encoding="utf-8")
-    (layout["metadata"] / "pops.stderr.log").write_text(result.stderr or "", encoding="utf-8")
+    _run_pops_command(command, layout)
 
     for suffix in (".preds", ".coefs", ".marginals"):
         if not Path(f"{out_prefix}{suffix}").exists():
