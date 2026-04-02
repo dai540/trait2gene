@@ -1,0 +1,1 @@
+"""Bundled manifests and examples."""

@@ -1,0 +1,50 @@
+# Copy this file and replace every absolute path with a path that exists in your environment.
+project: bmi_realpaths
+trait: bmi
+
+input:
+  sumstats: /data/gwas/bmi/bmi.sumstats.tsv.gz
+  genome_build: GRCh37
+  ancestry: EAS
+
+columns:
+  snp: SNP
+  p: P
+  n: N
+  chr: CHR
+  bp: BP
+  a1: A1
+  a2: A2
+
+sample_size:
+  mode: column
+  value: N
+
+resources:
+  magma_bin: /opt/magma/magma
+  reference_panel: /data/reference/1000g/eas/g1000_eas
+  gene_locations: /data/reference/magma/gene_loc_build37.txt
+  gene_annotation: /data/reference/pops/gene_annot.tsv
+  feature_matrix_prefix: /data/reference/pops/features/default_full_v1/pops_features
+  control_features_path: /data/reference/pops/features/features_jul17_control.txt
+  feature_bundle: default_full_v1
+
+analysis:
+  magma:
+    model: snp-wise=mean
+    annotation_snp_loc_source: reference_bim
+  pops:
+    method: ridge
+    use_magma_covariates: true
+    use_magma_error_cov: true
+    remove_hla: true
+    feature_selection_p_cutoff: 0.05
+    random_seed: 42
+  prioritization:
+    mode: lead_snp_window
+    window_bp: 500000
+
+output:
+  outdir: /data/projects/trait2gene/results/bmi_realpaths
+  write_html_report: true
+  write_json_summary: true

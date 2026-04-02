@@ -1,0 +1,45 @@
+# Use this template when you already have MAGMA outputs and a pre-munged feature matrix.
+project: cad_precomputed
+trait: cad
+mode: advanced
+
+input:
+  sumstats: /data/gwas/cad/cad.sumstats.tsv.gz
+  genome_build: GRCh37
+  ancestry: EUR
+
+columns:
+  snp: SNP
+  p: P
+  n: N
+  chr: CHR
+  bp: BP
+  a1: A1
+  a2: A2
+
+sample_size:
+  mode: column
+  value: N
+
+resources:
+  magma_bin: /opt/magma/magma
+  precomputed_magma_prefix: /data/projects/cad/magma/cad
+  gene_annotation: /data/reference/pops/gene_annot.tsv
+  feature_matrix_prefix: /data/reference/pops/features/default_full_v1/pops_features
+  control_features_path: /data/reference/pops/features/features_jul17_control.txt
+  feature_bundle: default_full_v1
+
+analysis:
+  pops:
+    method: ridge
+    use_magma_covariates: true
+    use_magma_error_cov: true
+    remove_hla: true
+  prioritization:
+    mode: locus_file
+    locus_file: /data/projects/cad/loci/cad_loci.tsv
+
+output:
+  outdir: /data/projects/trait2gene/results/cad_precomputed
+  write_html_report: true
+  write_json_summary: true
