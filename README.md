@@ -44,6 +44,7 @@ Tutorials:
 - `docs/source/tutorials/real-paths.md`
 - `docs/source/tutorials/public-schizophrenia.md`
 - generated Sphinx site under `docs/build/html/`
+- published docs index: `https://dai540.github.io/trait2gene/`
 
 Real public example:
 
@@ -61,6 +62,8 @@ runs the pipeline, and writes:
 ## Documentation
 
 The documentation source lives under `docs/source/` and is built with Sphinx.
+The published documentation homepage is
+[`index.html`](https://dai540.github.io/trait2gene/).
 
 Common commands:
 

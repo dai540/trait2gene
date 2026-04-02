@@ -54,5 +54,4 @@ html_theme = "furo"
 html_title = f"{project} {version}"
 html_static_path = ["_static"]
 html_css_files = ["custom.css"]
-html_baseurl = "https://your-org.github.io/trait2gene/"
-
+html_baseurl = "https://dai540.github.io/trait2gene/"
