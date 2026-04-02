@@ -47,9 +47,10 @@ docs = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/your-org/trait2gene"
-Repository = "https://github.com/your-org/trait2gene"
-Issues = "https://github.com/your-org/trait2gene/issues"
+Homepage = "https://dai540.github.io/trait2gene/"
+Documentation = "https://dai540.github.io/trait2gene/"
+Repository = "https://github.com/dai540/trait2gene"
+Issues = "https://github.com/dai540/trait2gene/issues"
 
 [project.scripts]
 trait2gene = "trait2gene.cli:app"

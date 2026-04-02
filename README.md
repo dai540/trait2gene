@@ -4,6 +4,14 @@
 MAGMA handoff, feature preparation, PoPS execution, locus prioritization, and
 reporting behind a single workflow.
 
+[![CI](https://github.com/dai540/trait2gene/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/dai540/trait2gene/actions/workflows/ci.yml)
+[![Docs](https://github.com/dai540/trait2gene/actions/workflows/docs.yml/badge.svg?branch=main)](https://github.com/dai540/trait2gene/actions/workflows/docs.yml)
+[![Docs Site](https://img.shields.io/badge/docs-GitHub%20Pages-1f5f8b)](https://dai540.github.io/trait2gene/)
+[![License: GPL--3.0](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](https://github.com/dai540/trait2gene/blob/main/LICENSE)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3776AB)](https://www.python.org/)
+
+[Documentation](https://dai540.github.io/trait2gene/) | [API Reference](https://dai540.github.io/trait2gene/reference/api.html) | [Tutorials](https://dai540.github.io/trait2gene/tutorials/index.html) | [Actions](https://github.com/dai540/trait2gene/actions) | [Repository](https://github.com/dai540/trait2gene) | [Issues](https://github.com/dai540/trait2gene/issues)
+
 MAGMA stays external and is not redistributed. The package vendors the upstream
 PoPS Python scripts for compatibility, while `trait2gene` owns the config
 contract, stage orchestration, standardized outputs, and downstream reporting.
@@ -41,10 +49,9 @@ Real-path templates for actual runs:
 
 Tutorials:
 
-- `docs/source/tutorials/real-paths.md`
-- `docs/source/tutorials/public-schizophrenia.md`
-- generated Sphinx site under `docs/build/html/`
-- published docs index: `https://dai540.github.io/trait2gene/`
+- [Real Paths Tutorial](https://dai540.github.io/trait2gene/tutorials/real-paths.html)
+- [Public Schizophrenia Tutorial](https://dai540.github.io/trait2gene/tutorials/public-schizophrenia.html)
+- local Sphinx build output: `docs/build/html/index.html`
 
 Real public example:
 
@@ -63,7 +70,13 @@ runs the pipeline, and writes:
 
 The documentation source lives under `docs/source/` and is built with Sphinx.
 The published documentation homepage is
-[`index.html`](https://dai540.github.io/trait2gene/).
+[`https://dai540.github.io/trait2gene/`](https://dai540.github.io/trait2gene/).
+
+Repository-side setup:
+
+- GitHub Pages should be configured to deploy with GitHub Actions
+- `.github/workflows/docs.yml` builds and deploys `docs/build/html`
+- `.github/workflows/ci.yml` runs `ruff` and `pytest` on pushes and pull requests
 
 Common commands:
 
