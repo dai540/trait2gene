@@ -1,107 +1,120 @@
 from __future__ import annotations
 
-from collections.abc import Callable
+import argparse
+import json
+import platform
+import sys
 from pathlib import Path
-from typing import Any
 
-import typer
-
-from trait2gene.config.defaults import OUTPUT_LAYOUT
-from trait2gene.engine.logging import console, err_console
-from trait2gene.engine.runner import run_pipeline
-from trait2gene.workflows.doctor import run_doctor
-from trait2gene.workflows.feature_stage import run_feature_prep
-from trait2gene.workflows.magma_stage import run_magma
-from trait2gene.workflows.pops_stage import run_pops
-from trait2gene.workflows.prepare import run_prepare
-from trait2gene.workflows.prioritize_stage import run_prioritize
-from trait2gene.workflows.report_stage import run_report
-from trait2gene.workflows.validate import run_validate
-
-app = typer.Typer(
-    no_args_is_help=True,
-    pretty_exceptions_enable=False,
-    help="End-to-end PoPS-oriented GWAS gene prioritization CLI.",
-)
-inspect_app = typer.Typer(no_args_is_help=True, help="Inspect standardized outputs.")
-app.add_typer(inspect_app, name="inspect")
-DOCTOR_CONFIG_OPTION = typer.Option(None, "--config", "-c")
+from trait2gene.config import ConfigError, load_config, validate_config, write_template
+from trait2gene.pipeline import build_stage_plan, materialize_run
+from trait2gene.version import __version__
 
 
-def _invoke(action: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
+def _build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="trait2gene",
+        description="Minimal trait-to-gene run planner.",
+    )
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    init_parser = subparsers.add_parser("init", help="Write a minimal TOML config template.")
+    init_parser.add_argument("config", type=Path)
+
+    validate_parser = subparsers.add_parser("validate", help="Validate a TOML config.")
+    validate_parser.add_argument("config", type=Path)
+
+    plan_parser = subparsers.add_parser("plan", help="Print the derived stage plan.")
+    plan_parser.add_argument("config", type=Path)
+    plan_parser.add_argument("--json", action="store_true", help="Print the plan as JSON.")
+
+    run_parser = subparsers.add_parser("run", help="Create a compact run directory.")
+    run_parser.add_argument("config", type=Path)
+
+    doctor_parser = subparsers.add_parser(
+        "doctor",
+        help="Report environment and optional config readiness.",
+    )
+    doctor_parser.add_argument("--config", type=Path, default=None)
+
+    return parser
+
+
+def _validate_or_raise(config_path: Path):
+    config = load_config(config_path)
+    errors = validate_config(config)
+    if errors:
+        raise ConfigError("\n".join(errors))
+    return config
+
+
+def command_init(config_path: Path) -> int:
+    destination = write_template(config_path)
+    print(f"Wrote template config to {destination}")
+    return 0
+
+
+def command_validate(config_path: Path) -> int:
+    config = _validate_or_raise(config_path)
+    print(f"Validation passed for {config.project}")
+    return 0
+
+
+def command_plan(config_path: Path, *, as_json: bool) -> int:
+    config = _validate_or_raise(config_path)
+    stage_plan = build_stage_plan(config)
+    if as_json:
+        print(json.dumps([stage.__dict__ for stage in stage_plan], indent=2))
+        return 0
+    print(f"Stage plan for {config.project}:")
+    for stage in stage_plan:
+        print(f"- {stage.name}: {stage.summary}")
+    return 0
+
+
+def command_run(config_path: Path) -> int:
+    config = _validate_or_raise(config_path)
+    config_text = config_path.expanduser().resolve().read_text(encoding="utf-8")
+    outdir = materialize_run(config, config_text)
+    print(f"Materialized run directory at {outdir}")
+    return 0
+
+
+def command_doctor(config_path: Path | None) -> int:
+    payload: dict[str, object] = {
+        "trait2gene_version": __version__,
+        "python": platform.python_version(),
+        "python_executable": sys.executable,
+        "platform": platform.platform(),
+    }
+    if config_path is not None:
+        try:
+            config = load_config(config_path)
+            payload["config"] = str(config_path.expanduser().resolve())
+            payload["config_errors"] = validate_config(config)
+        except ConfigError as exc:
+            payload["config"] = str(config_path.expanduser().resolve())
+            payload["config_errors"] = [str(exc)]
+    print(json.dumps(payload, indent=2))
+    return 0
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = _build_parser()
+    args = parser.parse_args(argv)
     try:
-        return action(*args, **kwargs)
-    except Exception as exc:  # pragma: no cover - exercised via CLI tests
-        err_console.print(f"[bold red]Error:[/bold red] {exc}")
-        raise typer.Exit(code=1) from exc
-
-
-@app.command()
-def run(config: Path) -> None:
-    """Run the full pipeline."""
-    _invoke(run_pipeline, config)
-    console.print("[green]Pipeline completed.[/green]")
-
-
-@app.command("validate")
-def validate_cmd(config: Path) -> None:
-    """Validate config and input contracts."""
-    _invoke(run_validate, config)
-
-
-@app.command("fetch-resources")
-def fetch_resources_cmd(config: Path) -> None:
-    """Resolve resources and write the manifest."""
-    _invoke(run_prepare, config)
-
-
-@app.command("run-magma")
-def run_magma_cmd(config: Path) -> None:
-    """Plan the MAGMA stage."""
-    _invoke(run_magma, config)
-
-
-@app.command("prep-features")
-def prep_features_cmd(config: Path) -> None:
-    """Prepare or validate feature bundles."""
-    _invoke(run_feature_prep, config)
-
-
-@app.command("run-pops")
-def run_pops_cmd(config: Path) -> None:
-    """Plan the PoPS stage."""
-    _invoke(run_pops, config)
-
-
-@app.command("prioritize")
-def prioritize_cmd(config: Path) -> None:
-    """Produce locus-level prioritized genes."""
-    _invoke(run_prioritize, config)
-
-
-@app.command("report")
-def report_cmd(config: Path) -> None:
-    """Render report assets from current outputs."""
-    _invoke(run_report, config)
-
-
-@app.command()
-def doctor(config: Path | None = DOCTOR_CONFIG_OPTION) -> None:
-    """Inspect environment health and optional config wiring."""
-    payload = _invoke(run_doctor, config)
-    console.print_json(data=payload)
-
-
-@inspect_app.command("outputs")
-def inspect_outputs(path: Path) -> None:
-    """Summarize a standardized output directory."""
-    resolved = path.expanduser().resolve()
-    summary: dict[str, dict[str, Any]] = {}
-    for name, relative in OUTPUT_LAYOUT.items():
-        candidate = resolved / relative
-        summary[name] = {
-            "path": str(candidate),
-            "exists": candidate.exists(),
-            "file_count": len(list(candidate.glob("*"))) if candidate.exists() else 0,
-        }
-    console.print_json(data=summary)
+        if args.command == "init":
+            return command_init(args.config)
+        if args.command == "validate":
+            return command_validate(args.config)
+        if args.command == "plan":
+            return command_plan(args.config, as_json=args.json)
+        if args.command == "run":
+            return command_run(args.config)
+        if args.command == "doctor":
+            return command_doctor(args.config)
+    except ConfigError as exc:
+        print(f"Configuration error: {exc}", file=sys.stderr)
+        return 2
+    parser.error(f"Unknown command: {args.command}")
+    return 2

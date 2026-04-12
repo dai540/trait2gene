@@ -1,64 +1,44 @@
 # trait2gene
 
-`trait2gene` is a Python package and CLI for end-to-end PoPS-style GWAS gene
-prioritization. It standardizes config validation, resource resolution, MAGMA
-handoff, feature preparation, PoPS execution, locus-level ranking, and report
-generation behind one reproducible workflow.
+Minimal package. Minimal docs. No bundled large data.
+
+The repository is intentionally rebuilt around four small documentation
+sections:
+
+- Getting Started
+- Guides
+- Tutorials
+- Reference
 
 ```{toctree}
-:maxdepth: 2
+:maxdepth: 1
 :caption: Getting Started
 
-installation
-quickstart
+getting-started/installation
+getting-started/quickstart
 ```
 
 ```{toctree}
-:maxdepth: 2
+:maxdepth: 1
 :caption: Guides
 
-guides/architecture
-guides/cli
 guides/configuration
-guides/outputs
+guides/cli
 ```
 
 ```{toctree}
-:maxdepth: 2
+:maxdepth: 1
 :caption: Tutorials
 
-tutorials/index
+tutorials/minimal-local-run
+tutorials/external-tools-dry-run
 ```
 
 ```{toctree}
-:maxdepth: 2
+:maxdepth: 1
 :caption: Reference
 
-reference/api
+reference/index
+reference/python-api
 ```
-
-## Highlights
-
-- External MAGMA execution without redistributing MAGMA itself
-- Upstream-compatible PoPS wrapping with standardized intermediate outputs
-- Strict YAML configuration via Pydantic models
-- Locus prioritization and HTML reporting on top of PoPS outputs
-- Reproducible public example using real downloaded data
-
-## Real public example
-
-The repository includes a full public schizophrenia walkthrough. It downloads
-public inputs, writes a machine-local config, runs the pipeline using
-precomputed MAGMA outputs, and verifies that `trait2gene` reproduces the public
-upstream PoPS results.
-
-```bash
-python scripts/run_public_schizophrenia_example.py
-```
-
-Key artifacts:
-
-- `real_runs/schizophrenia_public_example/results/reports/report.html`
-- `real_runs/schizophrenia_public_example/verification_summary.json`
-- `real_runs/schizophrenia_public_example/result_snapshot.json`
 

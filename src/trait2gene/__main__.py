@@ -1,9 +1,5 @@
-from trait2gene.cli import app
-
-
-def main() -> None:
-    app()
-
+from trait2gene.cli import main
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
+

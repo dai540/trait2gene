@@ -1,1 +1,0 @@
-"""Placeholder upstream vendor namespace."""

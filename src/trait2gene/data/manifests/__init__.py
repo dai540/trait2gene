@@ -1,1 +1,0 @@
-"""Default resource manifest package."""
